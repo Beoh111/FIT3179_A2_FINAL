@@ -1,0 +1,160 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Malaysia — choropleth of extreme rainfall (rx5day) + proportional circles for flood damage; selectable year.",
+  "params": [
+    {
+      "name": "year",
+      "value": 2023,
+      "bind": {"input": "range", "min": 2000, "max": 2024, "step": 1}
+    }
+  ],
+  "projection": {"type": "mercator", "center": [115, 4], "scale": 3700},
+  "layer": [
+    {
+      "name": "graticule",
+      "data": {"url": "geo/graticule.json"},
+      "mark": {
+        "type": "geoshape",
+        "stroke": "#cfcfcf",
+        "fill": null,
+        "strokeWidth": 0.5
+      },
+      "encoding": {"shape": {"field": "geometry", "type": "geojson"}}
+    },
+    {
+      "name": "states",
+      "data": {
+        "url": "geo/malaysia_states_topo.json",
+        "format": {"type": "topojson", "feature": "states"}
+      },
+      "transform": [
+        {
+          "lookup": "properties.name",
+          "from": {
+            "data": {"url": "data/aggregated_annual.csv"},
+            "key": "state",
+            "fields": [
+              "pr_mm",
+              "rx5day_mm",
+              "r20mm_days",
+              "flood_count",
+              "total_damage_usd",
+              "damage_per_capita",
+              "population",
+              "year"
+            ]
+          }
+        },
+        {"filter": "datum.year == year"}
+      ],
+      "mark": {"type": "geoshape", "stroke": "#888", "strokeWidth": 0.6},
+      "encoding": {
+        "shape": {"field": "geometry", "type": "geojson"},
+        "color": {
+          "field": "rx5day_mm",
+          "type": "quantitative",
+          "title": "Max 5-day rainfall (mm)",
+          "scale": {"scheme": "blues"}
+        },
+        "tooltip": [
+          {
+            "field": "properties.name",
+            "type": "nominal",
+            "title": "State (topojson)"
+          },
+          {
+            "field": "pr_mm",
+            "type": "quantitative",
+            "title": "Annual total (mm)"
+          },
+          {
+            "field": "rx5day_mm",
+            "type": "quantitative",
+            "title": "Max 5-day (mm)"
+          },
+          {
+            "field": "r20mm_days",
+            "type": "quantitative",
+            "title": "Days >20mm"
+          },
+          {
+            "field": "flood_count",
+            "type": "quantitative",
+            "title": "Flood events (year)"
+          },
+          {
+            "field": "total_damage_usd",
+            "type": "quantitative",
+            "title": "Total damage (USD)"
+          },
+          {
+            "field": "damage_per_capita",
+            "type": "quantitative",
+            "title": "Damage per capita (USD)"
+          }
+        ]
+      }
+    },
+    {
+      "name": "damage_symbols",
+      "data": {"url": "data/state_centroids.csv"},
+      "transform": [
+        {
+          "lookup": "state",
+          "from": {
+            "data": {"url": "data/aggregated_annual.csv"},
+            "key": "state",
+            "fields": [
+              "total_damage_usd",
+              "damage_per_capita",
+              "flood_count",
+              "year"
+            ]
+          }
+        },
+        {"filter": "datum.year == year"},
+        {"filter": "datum.total_damage_usd > 0"}
+      ],
+      "mark": {
+        "type": "circle",
+        "opacity": 0.7,
+        "stroke": "#660000",
+        "strokeWidth": 0.5
+      },
+      "encoding": {
+        "longitude": {"field": "lon", "type": "quantitative"},
+        "latitude": {"field": "lat", "type": "quantitative"},
+        "size": {
+          "field": "total_damage_usd",
+          "type": "quantitative",
+          "title": "Total damage (USD)",
+          "scale": {"type": "sqrt", "range": [20, 3000]}
+        },
+        "color": {"value": "#b30000"},
+        "tooltip": [
+          {"field": "state", "type": "nominal", "title": "State"},
+          {
+            "field": "total_damage_usd",
+            "type": "quantitative",
+            "title": "Total damage (USD)"
+          },
+          {
+            "field": "damage_per_capita",
+            "type": "quantitative",
+            "title": "Damage per capita (USD)"
+          },
+          {
+            "field": "flood_count",
+            "type": "quantitative",
+            "title": "Flood events (year)"
+          }
+        ]
+      }
+    }
+  ],
+  "config": {
+    "view": {"stroke": "transparent"},
+    "legend": {"orient": "bottom-right"},
+    "title": {"fontSize": 14, "anchor": "start"}
+  }
+}
