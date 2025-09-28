@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vega-Lite</title>
+<style>body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;padding:24px}#vis{max-width:1000px;margin:0 auto}</style>
+<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head><body>
+<div id="vis"></div>
+<script>
+const spec = {"{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": {
+    "text": "Malaysia Flood Risk by State (2014-2020)",
+    "subtitle": "Average flood incidents per 100,000 population",
+    "fontSize": 16,
+    "anchor": "start",
+    "color": "#2c3e50"
+  },
+  "width": 800,
+  "height": 500,
+  "projection": {
+    "type": "equirectangular",
+    "center": [102, 4],
+    "scale": 2800
+  },
+  "layer": [
+    {
+      "data": {
+        "graticule": {"step": [10, 10]}
+      },
+      "mark": {
+        "type": "geoshape",
+        "stroke": "#e6e6e6",
+        "strokeWidth": 0.5,
+        "fill": null
+      }
+    },
+    {
+      "data": {
+        "sphere": true
+      },
+      "mark": {
+        "type": "geoshape",
+        "fill": "#e6f3ff",
+        "stroke": "#4682b4",
+        "strokeWidth": 1
+      }
+    },
+    {
+      "data": {
+        "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/geo/malaysia_states_topo.topojson",
+        "format": {
+          "type": "topojson",
+          "feature": "gadm41_MYS_1"
+        }
+      },
+      "transform": [
+        {
+          "calculate": "datum.properties.NAME_1 == 'NegeriSembilan' ? 'Nsembilan' : datum.properties.NAME_1 == 'PulauPinang' ? 'Penang' : datum.properties.NAME_1 == 'Trengganu' ? 'Terengganu' : datum.properties.NAME_1",
+          "as": "state_match"
+        },
+        {
+          "lookup": "state_match",
+          "from": {
+            "data": {
+              "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/data/aggregated_annual.csv"
+            },
+            "key": "state",
+            "fields": ["flood_count_per100k", "damage_per_capita", "total_deaths"]
+          },
+          "default": {"flood_count_per100k": 0, "damage_per_capita": 0, "total_deaths": 0}
+        }
+      ],
+      "mark": {
+        "type": "geoshape",
+        "stroke": "#ffffff",
+        "strokeWidth": 0.8
+      },
+      "encoding": {
+        "color": {
+          "field": "flood_count_per100k",
+          "type": "quantitative",
+          "scale": {
+            "type": "sequential",
+            "scheme": "orangered",
+            "domain": [0, 20]
+          },
+          "legend": {
+            "title": "Flood Risk per 100K Population",
+            "titleFontSize": 12,
+            "labelFontSize": 11,
+            "orient": "bottom-right",
+            "gradientLength": 200
+          }
+        },
+        "tooltip": [
+          {
+            "field": "properties.NAME_1",
+            "type": "nominal",
+            "title": "State"
+          },
+          {
+            "field": "flood_count_per100k",
+            "type": "quantitative",
+            "title": "Flood Risk per 100K",
+            "format": ".2f"
+          }
+        ]
+      }
+    }
+  ]
+}"
+vegaEmbed("#vis", spec, { actions: { export:true, source:true, editor:true } });
+</script>
+</body></html>
