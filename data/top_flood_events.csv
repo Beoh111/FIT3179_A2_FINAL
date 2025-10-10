@@ -1,0 +1,3 @@
+rank,event_key,event_name,year,state,location_text,total_damage_usd,total_damage_million_usd,damage_missing_any,total_deaths,rows
+1,No,NA,2000,Kedah,"Kuala Krai, Pasir Puteh, Kota Bharu, Pasir Mas, Tumpat districts (Kelantan province), Kubang Pasu, Kota Setar, Padang Terap districts (Kedah province), Besut district (Terengganu province)",1997040000,1997.04,FALSE,217,60
+2,Yes,NA,2007,Johor,"Johor, Pahang provinces",889000000,889,FALSE,34,2
