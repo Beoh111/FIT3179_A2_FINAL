@@ -1,118 +1,872 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Vega-Lite</title>
-<style>body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;padding:24px}#vis{max-width:1000px;margin:0 auto}</style>
-<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-</head><body>
-<div id="vis"></div>
-<script>
-const spec = {
-  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-  "title": {
-    "text": "Malaysia Flood Risk by State (2014-2020)",
-    "subtitle": "Average flood incidents per 100,000 population",
-    "fontSize": 16,
-    "anchor": "start",
-    "color": "#2c3e50"
-  },
-  "width": 800,
-  "height": 500,
-  "projection": {
-    "type": "equirectangular",
-    "center": [102, 4],
-    "scale": 2800
-  },
-  "layer": [
-    {
-      "data": {
-        "graticule": {"step": [10, 10]}
-      },
-      "mark": {
-        "type": "geoshape",
-        "stroke": "#e6e6e6",
-        "strokeWidth": 0.5,
-        "fill": null
-      }
-    },
-    {
-      "data": {
-        "sphere": true
-      },
-      "mark": {
-        "type": "geoshape",
-        "fill": "#e6f3ff",
-        "stroke": "#4682b4",
-        "strokeWidth": 1
-      }
-    },
-    {
-      "data": {
-        "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/geo/malaysia_states_topo.topojson",
-        "format": {
-          "type": "topojson",
-          "feature": "gadm41_MYS_1"
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malaysia Flood Risk Analysis (2000-2020)</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #555555;
+            line-height: 1.8;
+            background: url('https://static.vecteezy.com/system/resources/thumbnails/006/925/789/small/flood-disaster-flooding-water-in-city-street-design-vector.jpg') repeat;
+            margin: 0;
+            padding: 0;
         }
-      },
-      "transform": [
-        {
-          "calculate": "datum.properties.NAME_1 == 'NegeriSembilan' ? 'Nsembilan' : datum.properties.NAME_1 == 'PulauPinang' ? 'Penang' : datum.properties.NAME_1 == 'Trengganu' ? 'Terengganu' : datum.properties.NAME_1",
-          "as": "state_match"
-        },
-        {
-          "lookup": "state_match",
-          "from": {
-            "data": {
-              "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/data/aggregated_annual.csv"
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #2c3e50;
+            border-left: 5px solid #f39c12;
+            padding-left: 15px;
+            margin-bottom: 30px;
+        }
+        h3 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        .annotation {
+            background-color: #fff3cd;
+            padding: 20px;
+            font-size: 15px;
+            color: #856404;
+            margin-bottom: 30px;
+        }
+        .small-text {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        .hero {
+            background: linear-gradient(to right, #3498db, #9b59b6);
+            color: white;
+            text-align: center;
+            padding: 100px 40px;
+        }
+        .hero h1 {
+            color: white;
+        }
+        .hero p {
+            color: white;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+        }
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .stat-card .label {
+            font-size: 18px;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 60% 40%;
+            grid-gap: 30px;
+        }
+        .visualization {
+            background-color: #f8f9fa;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            margin-bottom: 30px;
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+        .map-vis {
+            height: 600px;
+            width: 800px;
+            margin: 0 auto;
+        }
+        .callout-box {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-left: 5px solid #f39c12;
+        }
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 30px;
+        }
+        .footer {
+            background-color: #34495e;
+            color: white;
+            text-align: center;
+            padding: 40px;
+        }
+        .footer a {
+            color: #f39c12;
+            text-decoration: none;
+        }
+        .collapsible {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+
+    <!-- Act 1: The Problem -->
+    <section id="act1" class="container">
+        <!-- Section 1: Title & Introduction -->
+        <h1>🌊 MALAYSIA FLOOD RISK ANALYSIS</h1>
+        <h2>Understanding Two Decades of Flood Patterns (2000-2020)</h2>
+        <p>"Every year, thousands of Malaysians wake up to flooded homes. But which communities face the greatest risk?"</p>
+        <p>Between 2000 and 2020, flooding has caused billions in damages and displaced entire communities across Malaysia. This visualization explores which areas face the highest risk, how patterns have changed over time, and what drives these devastating natural disasters.</p>
+    </section>
+
+
+    <!-- Act 2: Where & Who -->
+    <section id="act2" class="container">
+        <h2>🎬 ACT 2: WHERE & WHO (Geographic Analysis)</h2>
+        <!-- Section 3: Interactive Choropleth Map -->
+        <h3>Where Are Malaysia's Flood Hotspots?</h3>
+        <p>Not all states face equal flood risk. This interactive map reveals the geographic distribution of flood incidents, normalized by population for fair comparison. Use the slider to explore how risk patterns evolved year by year from 2014 to 2020.</p>
+        <div id="choropleth-map" class="visualization map-vis"></div>
+        <div class="annotation">
+            💡 KEY INSIGHT: Eastern states like Kelantan and Terengganu face significantly higher flood risk due to their exposure to monsoon patterns and topographic factors. Notice how 2014 and 2016 were particularly severe years.
+        </div>
+    </section>
+
+
+    <!-- Act 3: When -->
+    <section id="act3" class="container">
+        <h2>🎬 ACT 3: WHEN (Temporal Patterns)</h2>
+        <!-- Section 5: Temporal Trends -->
+        <div class="two-column">
+            <div>
+                <h3>Are Floods Becoming More Frequent?</h3>
+                <p>Examining temporal trends reveals year-to-year variation in flood incidents. While there's no clear increasing trend, certain years (2016, 2017, 2019) experienced significantly more flooding than others.</p>
+                <div id="line-chart" class="visualization"></div>
+            </div>
+            <div class="callout-box">
+                <h4>📊 YEAR-BY-YEAR BREAKDOWN</h4>
+                <p>2014: 1 incident, $284M damage<br>Devastating Johor floods</p>
+                <p>2016: 4 incidents, peak year<br>Multiple states affected</p>
+                <p>2017: 3 incidents, 7 deaths<br>Kedah severely impacted</p>
+                <p>2019: 3 incidents<br>Recovery year patterns</p>
+                <p>AVERAGE: 2 floods per year</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="container">
+        <!-- Section 6: Floods vs. Economic Damage -->
+        <h3>Frequency vs. Severity: Not All Floods Cost the Same</h3>
+        <p>This dual-axis chart reveals a crucial insight: flood frequency doesn't always correlate with economic damage. A single severe event (2014) caused more damage than multiple smaller floods in other years combined.</p>
+        <div id="dual-axis-chart" class="visualization"></div>
+        <div class="annotation">
+            📈 INSIGHT: 2014 had only ONE flood incident but caused the highest economic damage ($284M). This highlights the importance of flood severity, not just frequency, in disaster planning.
+        </div>
+    </section>
+
+    <!-- Act 4: Why -->
+    <section id="act4" class="container">
+        <h2>🎬 ACT 4: WHY (Understanding Causes)</h2>
+        <!-- Section 7: Rainfall Correlation Analysis -->
+        <h3>Does More Rain Mean More Floods?</h3>
+        <p>To understand what drives flooding, we examine the relationship between heavy rainfall days (>20mm) and flood incidents. The scatter plot reveals a weak negative correlation, suggesting that flood risk depends on more than just rainfall quantity—factors like drainage systems, urbanization, and terrain play crucial roles.</p>
+        <div id="scatter-plot" class="visualization"></div>
+        <div class="annotation">
+            🌧️ SURPRISING FINDING: Terengganu has the MOST heavy rainfall days (avg 47 days/year) but relatively few flood incidents. Meanwhile, Johor floods despite fewer rainfall days, suggesting infrastructure and urban planning are key factors beyond precipitation.
+        </div>
+    </section>
+
+    <!-- Act 5: Comparison -->
+    <section id="act5" class="container">
+        <h2>🎬 ACT 5: COMPARISON (State-by-State)</h2>
+        <!-- Section 8: State Risk Ranking -->
+        <h3>The Top Flood-Risk States: A Ranking</h3>
+        <p>When normalized by population, which states face the highest relative risk? This ranking reveals that smaller eastern states face disproportionately high flood risk compared to their populations.</p>
+        <div id="bar-chart" class="visualization"></div>
+        <div class="callout-box">
+            <h4>🏆 TOP 3 HIGHEST RISK STATES</h4>
+            <p>1️⃣ TERENGGANU: 10.6 per 100K<br>Single severe 2016 incident</p>
+            <p>2️⃣ KELANTAN: 6.8 per 100K<br>Consistent annual flooding</p>
+            <p>3️⃣ JOHOR: 3.8 per 100K<br>High economic impact</p>
+        </div>
+    </section>
+
+    <!-- Act 6: Conclusion & Takeaways -->
+    <section id="act6" class="container">
+        <h2>🎬 ACT 6: CONCLUSION & TAKEAWAYS</h2>
+        <!-- Section 9: Key Takeaways -->
+        <h3>What Does This Mean for Malaysia?</h3>
+        <h4>🎯 KEY TAKEAWAYS FROM 20 YEARS OF FLOOD DATA</h4>
+        <ol>
+            <li><strong>GEOGRAPHIC INEQUALITY</strong><br>Eastern states (Kelantan, Terengganu, Pahang) face 3-5x higher flood risk than western states, requiring targeted disaster preparedness resources.</li>
+            <li><strong>SEVERITY OVER FREQUENCY</strong><br>A single catastrophic event (2014 Johor floods) caused more damage than dozens of smaller floods combined. Emergency response systems must prepare for rare but severe events.</li>
+            <li><strong>BEYOND RAINFALL</strong><br>More rain doesn't always mean more floods. Infrastructure, urban planning, and drainage systems play crucial roles. Terengganu's high rainfall with low flood incidents demonstrates effective water management.</li>
+            <li><strong>YEAR-TO-YEAR VARIATION</strong><br>Flood frequency varies significantly (0-4 incidents/year), emphasizing the need for continuous preparedness rather than reactive responses.</li>
+            <li><strong>VULNERABLE POPULATIONS</strong><br>When normalized by population, smaller states face disproportionate risk, suggesting resource allocation should consider both absolute and relative risk measures.</li>
+        </ol>
+    </section>
+
+    <section class="container">
+        <!-- Section 10: Recommendations & Call to Action -->
+        <div class="recommendations-grid">
+            <div>
+                <h4>📋 RECOMMENDATIONS</h4>
+                <p><strong>FOR POLICYMAKERS:</strong></p>
+                <ul>
+                    <li>Prioritize flood mitigation in eastern states</li>
+                    <li>Invest in early warning systems</li>
+                    <li>Improve drainage infrastructure in urban areas</li>
+                    <li>Develop state-specific flood response plans</li>
+                </ul>
+                <p><strong>FOR RESIDENTS:</strong></p>
+                <ul>
+                    <li>Know your local flood risk level</li>
+                    <li>Prepare emergency kits and evacuation plans</li>
+                    <li>Consider flood insurance in high-risk areas</li>
+                    <li>Stay informed during monsoon seasons</li>
+                </ul>
+            </div>
+            <div>
+                <h4>🔮 LOOKING FORWARD</h4>
+                <p>Climate change projections suggest more intense rainfall events in Southeast Asia. Understanding historical patterns is the first step toward building resilient communities.</p>
+                <p>The data shows that effective preparation and infrastructure can mitigate flood impacts even in high-rainfall areas. Malaysia's challenge is to replicate successful strategies across all vulnerable regions.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="container">
+        <!-- Section 11: Methodology & Data Sources -->
+        <div class="collapsible">
+            <h4>📚 DATA SOURCES & METHODOLOGY</h4>
+            <p class="small-text"><strong>Data Sources:</strong></p>
+            <ul class="small-text">
+                <li>Malaysian Meteorological Department - Precipitation and rainfall data (2014-2020)</li>
+                <li>EM-DAT International Disaster Database - Historical flood records (2000-2020)</li>
+                <li>Department of Statistics Malaysia - Population data by state</li>
+                <li>Natural Earth Data - Geographic boundaries (1:10m resolution)</li>
+            </ul>
+            <p class="small-text"><strong>Methodology:</strong></p>
+            <ul class="small-text">
+                <li>Population Normalization: Flood counts divided by state population (per 100,000) to enable fair comparison across different-sized states</li>
+                <li>Aggregation: Multi-year data aggregated using mean (risk rates) and sum (totals)</li>
+                <li>Geographic Mapping: State names standardized across datasets and matched with TopoJSON boundaries</li>
+            </ul>
+            <p class="small-text"><strong>Limitations:</strong></p>
+            <ul class="small-text">
+                <li>Data completeness varies by state (some states have limited records)</li>
+                <li>Economic damage may be underreported in rural areas</li>
+                <li>Climate and precipitation data limited to 2014-2020 period</li>
+                <li>Does not include indirect economic impacts (business disruption, etc.)</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Section 12: Footer -->
+    <footer class="footer">
+        <p>FIT3179 Data Visualisation 2 | Monash University Malaysia</p>
+        <p>Created by Bryan Neoh Zheng Hong | October 2025</p>
+        <p>📂 GitHub Repository: <a href="https://github.com/Beoh111/FIT3179_A2_FINAL">https://github.com/Beoh111/FIT3179_A2_FINAL</a></p>
+        <p>📄 Five Design Sheets: <a href="#">[Link to PDF]</a></p>
+        <p>📧 Contact: bneo0002@monash.student.edu</p>
+        <p>© 2025 | Created with Vega-Lite and HTML</p>
+    </footer>
+
+    <script>
+        // Section 3: Interactive Choropleth Map
+        const choroplethSpec = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "title": {
+            "text": "Malaysia Flood Risk by State",
+            "subtitle": "Flood incidents per 100,000 population - Use slider to select year",
+            "fontSize": 18,
+            "anchor": "start",
+            "color": "#2c3e50"
+          },
+          "width": 800,
+          "height": 500,
+          "params": [
+            {
+              "name": "Year_selection",
+              "value": 2014,
+              "bind": {
+                "input": "range",
+                "min": 2014,
+                "max": 2020,
+                "step": 1,
+                "name": "Select Year: "
+              }
+            }
+          ],
+          "projection": {
+            "type": "equirectangular",
+            "center": [102, 4],
+            "scale": 2800
+          },
+          "layer": [
+            {
+              "data": {
+                "graticule": {"step": [10, 10]}
+              },
+              "mark": {
+                "type": "geoshape",
+                "stroke": "#cccccc",
+                "strokeWidth": 1,
+                "fill": null
+              }
             },
-            "key": "state",
-            "fields": ["flood_count_per100k", "damage_per_capita", "total_deaths"]
+            {
+              "data": {
+                "sphere": true
+              },
+              "mark": {
+                "type": "geoshape",
+                "fill": "#e6f3ff",
+                "stroke": "#4682b4",
+                "strokeWidth": 1
+              }
+            },
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/data/aggregated_annual.csv"
+              },
+              "transform": [
+                {
+                  "filter": "datum.year == Year_selection"
+                },
+                {
+                  "calculate": "datum.state == 'Nsembilan' ? 'NegeriSembilan' : datum.state == 'Penang' ? 'PulauPinang' : datum.state == 'Terengganu' ? 'Trengganu' : datum.state",
+                  "as": "state_topo"
+                },
+                {
+                  "lookup": "state_topo",
+                  "from": {
+                    "data": {
+                      "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/geo/malaysia_states_topo.topojson",
+                      "format": {
+                        "type": "topojson",
+                        "feature": "gadm41_MYS_1"
+                      }
+                    },
+                    "key": "properties.NAME_1"
+                  },
+                  "as": "geo"
+                },
+                {
+                  "calculate": "isValid(datum.flood_count_per100k) && datum.flood_count_per100k > 0 ? 'Flood incident recorded' : 'No floods recorded'",
+                  "as": "status"
+                }
+              ],
+              "mark": {
+                "type": "geoshape",
+                "stroke": "#ffffff",
+                "strokeWidth": 0.8
+              },
+              "encoding": {
+                "shape": {
+                  "field": "geo",
+                  "type": "geojson"
+                },
+                "color": {
+                  "field": "flood_count_per100k",
+                  "type": "quantitative",
+                  "scale": {
+                    "type": "sequential",
+                    "domain": [0.1, 3, 6, 10, 15],
+                    "scheme": "orangered"
+                  },
+                  "legend": {
+                    "title": "Flood Risk per 100K Population",
+                    "titleFontSize": 12,
+                    "labelFontSize": 11,
+                    "orient": "bottom-right",
+                    "gradientLength": 200
+                  }
+                },
+                "tooltip": [
+                  {
+                    "field": "state",
+                    "type": "nominal",
+                    "title": "State"
+                  },
+                  {
+                    "field": "year",
+                    "type": "ordinal",
+                    "title": "Year"
+                  },
+                  {
+                    "field": "flood_count",
+                    "type": "quantitative",
+                    "title": "Flood Incidents"
+                  },
+                  {
+                    "field": "flood_count_per100k",
+                    "type": "quantitative",
+                    "title": "Flood Risk per 100K",
+                    "format": ".2f"
+                  },
+                  {
+                    "field": "total_deaths",
+                    "type": "quantitative",
+                    "title": "Deaths"
+                  },
+                  {
+                    "field": "total_damage_usd",
+                    "type": "quantitative",
+                    "title": "Damage (USD)",
+                    "format": "$,.0f"
+                  },
+                  {
+                    "field": "population",
+                    "type": "quantitative",
+                    "title": "Population (thousands)",
+                    "format": ",.0f"
+                  },
+                  {
+                    "field": "r20mm_days",
+                    "type": "quantitative",
+                    "title": "Heavy Rainfall Days (>20mm)"
+                  },
+                  {
+                    "field": "status",
+                    "type": "nominal",
+                    "title": "Status"
+                  }
+                ]
+              }
+            }
+          ]
+        };
+        vegaEmbed('#choropleth-map', choroplethSpec);
+
+        // Section 4: Bubble Map - Spec not provided, so not embedded
+
+        // Section 5: Line Chart
+        const lineSpec = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v6.2.0.json",
+          "title": {
+            "text": "Malaysia Flood Trends Over Time",
+            "subtitle": "Annual flood incidents and economic damage (2014-2020)",
+            "fontSize": 18,
+            "anchor": "start"
           },
-          "default": {"flood_count_per100k": 0, "damage_per_capita": 0, "total_deaths": 0}
-        }
-      ],
-      "mark": {
-        "type": "geoshape",
-        "stroke": "#ffffff",
-        "strokeWidth": 0.8
-      },
-      "encoding": {
-        "color": {
-          "field": "flood_count_per100k",
-          "type": "quantitative",
-          "scale": {
-            "type": "sequential",
-            "scheme": "orangered",
-            "domain": [0, 20]
+          "width": 380,
+          "height": 400,
+          "data": {
+            "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/data/summary_by_year.csv",
+            "format": {"type":"csv"}
           },
-          "legend": {
-            "title": "Flood Risk per 100K Population",
-            "titleFontSize": 12,
-            "labelFontSize": 11,
-            "orient": "bottom-right",
-            "gradientLength": 200
+          "transform": [
+            { "calculate": "year(datum.year)", "as": "year_only" }
+          ],
+          "encoding": {
+            "x": {
+              "field": "year_only",
+              "type": "ordinal",
+              "title": "Year",
+              "axis": { "labelAngle": 0, "grid": false }
+            }
+          },
+          "layer": [
+            {
+              "mark": {
+                "type": "line",
+                "point": { "filled": true, "size": 100 },
+                "color": "#e74c3c",
+                "strokeWidth": 3
+              },
+              "encoding": {
+                "y": {
+                  "field": "total_floods",
+                  "type": "quantitative",
+                  "title": "Number of Flood Incidents",
+                  "axis": { "titleColor": "#e74c3c", "grid": true, "gridOpacity": 0.3 }
+                },
+                "tooltip": [
+                  { "field": "year_only", "type": "ordinal", "title": "Year" },
+                  { "field": "total_floods", "type": "quantitative", "title": "Total Floods" },
+                  { "field": "total_damage", "type": "quantitative", "title": "Total Damage (USD)", "format": "$,.0f" },
+                  { "field": "total_population", "type": "quantitative", "title": "Total Population (thousands)", "format": ",.0f" }
+                ]
+              }
+            },
+
+            {
+              "mark": { "type": "rule", "strokeDash": [4, 4], "color": "#95a5a6", "strokeWidth": 2 },
+              "encoding": {
+                "y": { "aggregate": "mean", "field": "total_floods", "type": "quantitative" }
+              }
+            },
+
+            {
+              "transform": [
+                { "aggregate": [ { "op": "mean", "field": "total_floods", "as": "mean_floods" } ], "groupby": [] },
+                { "calculate": "round(datum.mean_floods, 2)", "as": "mean_rounded" },
+                { "calculate": "'Average: ' + datum.mean_rounded + ' floods/year'", "as": "avg_label" },
+                { "calculate": "2019", "as": "xpos" }
+              ],
+              "mark": {
+                "type": "text",
+                "align": "right",
+                "dx": 60,
+                "dy": -130,
+                "fontSize": 12,
+                "fontWeight": "bold",
+                "color": "#7f8c8d"
+              },
+              "encoding": {
+                "x": { "field": "xpos", "type": "ordinal" },
+                "y": { "field": "mean_floods", "type": "quantitative" },
+                "text": { "field": "avg_label", "type": "nominal" }
+              }
+            }
+          ]
+        };
+        vegaEmbed('#line-chart', lineSpec);
+
+        // Section 6: Dual-Axis Chart
+        const dualAxisSpec = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "title": {
+            "text": "Flood Incidents vs Economic Damage Over Time",
+            "subtitle": "Comparing frequency and financial impact (2014-2020)",
+            "fontSize": 18,
+            "anchor": "start"
+          },
+          "width": 680,
+          "height": 400,
+          "data": {
+            "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/data/summary_by_year.csv"
+          },
+          "transform": [
+            {
+              "calculate": "year(datum.year)",
+              "as": "year_only"
+            }
+          ],
+          "encoding": {
+            "x": {
+              "field": "year_only",
+              "type": "ordinal",
+              "title": "Year",
+              "axis": {
+                "labelAngle": 0
+              }
+            }
+          },
+          "layer": [
+            {
+              "mark": {
+                "type": "bar",
+                "color": "#3498db",
+                "opacity": 0.7
+              },
+              "encoding": {
+                "y": {
+                  "field": "total_floods",
+                  "type": "quantitative",
+                  "title": "Number of Flood Incidents",
+                  "axis": {
+                    "titleColor": "#3498db",
+                    "grid": false
+                  }
+                },
+                "tooltip": [
+                  {"field": "year_only", "type": "ordinal", "title": "Year"},
+                  {"field": "total_floods", "type": "quantitative", "title": "Total Floods"}
+                ]
+              }
+            },
+            {
+              "mark": {
+                "type": "line",
+                "color": "#e74c3c",
+                "strokeWidth": 3,
+                "point": {
+                  "filled": true,
+                  "size": 100,
+                  "color": "#e74c3c"
+                }
+              },
+              "encoding": {
+                "y": {
+                  "field": "total_damage",
+                  "type": "quantitative",
+                  "title": "Total Damage (USD)",
+                  "axis": {
+                    "titleColor": "#e74c3c",
+                    "orient": "right",
+                    "format": "$,.0s",
+                    "grid": false
+                  }
+                },
+                "tooltip": [
+                  {"field": "year_only", "type": "ordinal", "title": "Year"},
+                  {"field": "total_damage", "type": "quantitative", "title": "Total Damage", "format": "$,.0f"}
+                ]
+              }
+            }
+          ],
+          "resolve": {
+            "scale": {
+              "y": "independent"
+            }
           }
-        },
-        "tooltip": [
-          {
-            "field": "properties.NAME_1",
-            "type": "nominal",
-            "title": "State"
+        };
+        vegaEmbed('#dual-axis-chart', dualAxisSpec);
+
+        // Section 7: Scatter Plot
+        const scatterSpec = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "title": {
+            "text": "Relationship Between Heavy Rainfall and Flood Incidents",
+            "subtitle": "Does more rain mean more floods? (2014-2020)",
+            "fontSize": 18,
+            "anchor": "start"
           },
-          {
-            "field": "flood_count_per100k",
-            "type": "quantitative",
-            "title": "Flood Risk per 100K",
-            "format": ".2f"
+          "width": 600,
+          "height": 400,
+          "padding": 20,
+          "data": {
+            "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/data/aggregated_annual.csv"
+          },
+          "transform": [
+            {
+              "filter": "datum.flood_count > 0"
+            }
+          ],
+          "layer": [
+            {
+              "mark": {
+                "type": "circle",
+                "opacity": 0.7
+              },
+              "encoding": {
+                "x": {
+                  "field": "r20mm_days",
+                  "type": "quantitative",
+                  "title": "Number of Heavy Rainfall Days (>20mm)",
+                  "scale": {
+                    "zero": false,
+                    "padding": 10
+                  },
+                  "axis": {
+                    "grid": true,
+                    "gridOpacity": 0.3
+                  }
+                },
+                "y": {
+                  "field": "flood_count",
+                  "type": "quantitative",
+                  "title": "Number of Flood Incidents",
+                  "scale": {
+                    "padding": 10
+                  },
+                  "axis": {
+                    "grid": true,
+                    "gridOpacity": 0.3
+                  }
+                },
+                "size": {
+                  "field": "total_damage_usd",
+                  "type": "quantitative",
+                  "title": "Damage (USD)",
+                  "scale": {
+                    "type": "sqrt",
+                    "range": [100, 1500]
+                  },
+                  "legend": {
+                    "format": "$,.0s",
+                    "orient": "right"
+                  }
+                },
+                "color": {
+                  "field": "state",
+                  "type": "nominal",
+                  "title": "State",
+                  "scale": {
+                    "scheme": "category20"
+                  },
+                  "legend": {
+                    "orient": "right",
+                    "titleFontSize": 12,
+                    "labelFontSize": 11
+                  }
+                },
+                "tooltip": [
+                  {"field": "state", "type": "nominal", "title": "State"},
+                  {"field": "year", "type": "ordinal", "title": "Year"},
+                  {"field": "r20mm_days", "type": "quantitative", "title": "Heavy Rainfall Days"},
+                  {"field": "rx5day_mm", "type": "quantitative", "title": "Max 5-Day Rainfall (mm)", "format": ".1f"},
+                  {"field": "flood_count", "type": "quantitative", "title": "Flood Count"},
+                  {"field": "total_damage_usd", "type": "quantitative", "title": "Total Damage", "format": "$,.0f"},
+                  {"field": "total_deaths", "type": "quantitative", "title": "Deaths"}
+                ]
+              }
+            },
+            {
+              "mark": {
+                "type": "line",
+                "color": "#e74c3c",
+                "strokeWidth": 2,
+                "strokeDash": [5, 5]
+              },
+              "transform": [
+                {
+                  "regression": "flood_count",
+                  "on": "r20mm_days",
+                  "method": "linear"
+                }
+              ],
+              "encoding": {
+                "x": {
+                  "field": "r20mm_days",
+                  "type": "quantitative"
+                },
+                "y": {
+                  "field": "flood_count",
+                  "type": "quantitative"
+                }
+              }
+            },
+            {
+              "mark": {
+                "type": "text",
+                "align": "left",
+                "dx": 5,
+                "dy": -10,
+                "fontSize": 11,
+                "fontStyle": "italic",
+                "color": "#e74c3c"
+              },
+              "transform": [
+                {
+                  "regression": "flood_count",
+                  "on": "r20mm_days",
+                  "method": "linear"
+                },
+                {
+                  "filter": "datum.r20mm_days == 50"
+                }
+              ],
+              "encoding": {
+                "x": {"field": "r20mm_days", "type": "quantitative"},
+                "y": {"field": "flood_count", "type": "quantitative"},
+                "text": {"value": "Trend line"}
+              }
+            }
+          ]
+        };
+        vegaEmbed('#scatter-plot', scatterSpec);
+
+        // Section 8: Horizontal Bar Chart
+        const barSpec = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "title": {
+            "text": "Flood Risk Ranking by State",
+            "subtitle": "Average flood incidents per 100,000 population (2014-2020)",
+            "fontSize": 18,
+            "anchor": "start"
+          },
+          "width": 680,
+          "height": 400,
+          "data": {
+            "url": "https://raw.githubusercontent.com/Beoh111/FIT3179_A2/main/data/aggregated_annual.csv"
+          },
+          "transform": [
+            {
+              "filter": "isValid(datum.flood_count_per100k) && datum.flood_count_per100k > 0"
+            },
+            {
+              "aggregate": [
+                {"op": "mean", "field": "flood_count_per100k", "as": "avg_risk"},
+                {"op": "sum", "field": "total_deaths", "as": "sum_deaths"},
+                {"op": "mean", "field": "damage_per_capita", "as": "avg_damage"},
+                {"op": "mean", "field": "population", "as": "avg_population"}
+              ],
+              "groupby": ["state"]
+            },
+            {
+              "window": [{"op": "rank", "as": "rank"}],
+              "sort": [{"field": "avg_risk", "order": "descending"}]
+            }
+          ],
+          "mark": {
+            "type": "bar",
+            "cornerRadiusEnd": 4
+          },
+          "encoding": {
+            "y": {
+              "field": "state",
+              "type": "nominal",
+              "title": "State",
+              "sort": "-x",
+              "axis": {
+                "labelLimit": 150,
+                "labelFontSize": 12
+              }
+            },
+            "x": {
+              "field": "avg_risk",
+              "type": "quantitative",
+              "title": "Average Flood Risk per 100K Population",
+              "axis": {
+                "grid": true,
+                "gridOpacity": 0.3
+              }
+            },
+            "color": {
+              "field": "avg_risk",
+              "type": "quantitative",
+              "scale": {
+                "scheme": "orangered",
+                "domain": [0, 20]
+              },
+              "legend": null
+            },
+            "tooltip": [
+              {"field": "rank", "type": "quantitative", "title": "Rank"},
+              {"field": "state", "type": "nominal", "title": "State"},
+              {"field": "avg_risk", "type": "quantitative", "title": "Avg Flood Risk per 100K", "format": ".2f"},
+              {"field": "sum_deaths", "type": "quantitative", "title": "Total Deaths (2014-2020)"},
+              {"field": "avg_damage", "type": "quantitative", "title": "Avg Damage per Capita", "format": "$,.0f"},
+              {"field": "avg_population", "type": "quantitative", "title": "Avg Population (thousands)", "format": ",.0f"}
+            ]
           }
-        ]
-      }
-    }
-  ]
-}
-vegaEmbed("#vis", spec, { actions: { export:true, source:true, editor:true } });
-</script>
-</body></html>
+        };
+        vegaEmbed('#bar-chart', barSpec);
+    </script>
+
+</body>
+</html>
